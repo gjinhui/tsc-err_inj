@@ -26,6 +26,8 @@
 #include <linux/limits.h>
 #include <linux/sched.h>
 
+#define COUNT_MAX 50
+
 /*
  * The clocksource hpet is the reference clocksource for clocksource watchdog.
  * We can inject error to read_hpet to make TSC mistaken to mark unstable.
@@ -51,12 +53,13 @@ static int ret_handler(struct kretprobe_instance *ri, struct pt_regs *regs)
 	static int count;
 	u64 retval = regs_return_value(regs);
         
-	if (count < 50) {
+	if (count < COUNT_MAX) {
 		regs->ax += 20000000;
 		count++;
 	}
 
-	pr_info("retval: %llu, changed: %lu\n", retval, regs->ax);
+	if (count == 1 || (count == COUNT_MAX && count++))
+		pr_info("retval: %llu, changed: %lu\n", retval, regs->ax);
 
 	return 0;
 }
